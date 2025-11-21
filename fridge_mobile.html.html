@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>萌萌冰箱 ❤ 手機版</title>
+    <style>
+        :root {
+            --main-pink: #FFB7B2;
+            --deep-pink: #FF9E99;
+            --soft-pink: #FFF0F5;
+            --mint: #E2F0CB;
+            --blue: #B5EAD7;
+            --text: #5D5555;
+            --white: #ffffff;
+            --danger: #FF9AA2;
+            --warning: #FFE082;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Varela Round', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--soft-pink);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* 給底部按鈕留空間 */
+            font-size: 16px; /* 防止iOS自動放大 */
+        }
+
+        /* 頂部看板娘區 (固定) */
+        header {
+            background: var(--white);
+            padding: 15px;
+            border-bottom-left-radius: 25px;
+            border-bottom-right-radius: 25px;
+            box-shadow: 0 4px 15px rgba(255, 183, 178, 0.3);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mascot-avatar {
+            font-size: 45px;
+            animation: bounce 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        .bubble {
+            background: var(--mint);
+            border-radius: 15px;
+            padding: 10px 15px;
+            position: relative;
+            font-size: 0.9em;
+            line-height: 1.4;
+            flex-grow: 1;
+            border: 2px solid #fff;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.05);
+        }
+
+        .bubble::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 8px 8px 8px 0;
+            border-style: solid;
+            border-color: transparent var(--mint) transparent transparent;
+        }
+
+        /* 篩選標籤 */
+        .filter-bar {
+            display: flex;
+            padding: 15px 10px 5px 10px;
+            gap: 8px;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
+        }
+        .filter-bar::-webkit-scrollbar { display: none; } /* Chrome */
+
+        .filter-pill {
+            padding: 6px 16px;
+            background: rgba(255,255,255,0.6);
+            border: 1px solid var(--main-pink);
+            border-radius: 20px;
+            color: var(--text);
+            white-space: nowrap;
+            font-size: 0.9em;
+            transition: 0.2s;
+        }
+
+        .filter-pill.active {
+            background: var(--main-pink);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(255, 183, 178, 0.4);
+        }
+
+        /* 食物列表 */
+        .food-list {
+            padding: 10px;
+        }
+
+        .food-card {
+            background: var(--white);
+            border-radius: 18px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .food-card.expiring {
+            border-color: var(--warning);
+            background: #FFFCF0;
+        }
+
+        .food-card.expired {
+            border-color: var(--danger);
+            background: #FFF5F5;
+        }
+
+        .food-img {
+            width: 65px;
+            height: 65px;
+            background: var(--soft-pink);
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+            overflow: hidden;
+            object-fit: cover;
+        }
+
+        .food-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .food-info {
+            flex-grow: 1;
+        }
+
+        .food-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 5px;
+        }
+
+        .food-name {
+            font-weight: bold;
+            font-size: 1.05em;
+            color: #444;
+        }
+
+        .days-tag {
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-weight: bold;
+            background: var(--blue);
+            color: #444;
+        }
+        .days-tag.warn { background: var(--warning); color: #665200; }
+        .days-tag.danger { background: var(--danger); color: white; }
+
+        .meta-row {
+            font-size: 0.85em;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .btn-eat {
+            width: 100%;
+            padding: 8px;
+            background: var(--white);
+            border: 1px solid var(--main-pink);
+            color: var(--main-pink);
+            border-radius: 10px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .btn-eat:active {
+            background: var(--main-pink);
+            color: white;
+        }
+
+        /* 環保提示 */
+        .eco-tip {
+            margin-top: 10px;
+            font-size: 0.8em;
+            background: rgba(255,255,255,0.7);
+            padding: 8px;
+            border-radius: 8px;
+            border-left: 3px solid var(--danger);
+            color: #666;
+            display: block;
+        }
+
+        /* 懸浮新增按鈕 (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: var(--main-pink);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            box-shadow: 0 4px 15px rgba(255, 154, 162, 0.5);
+            z-index: 100;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .fab:active {
+            transform: scale(0.9);
+        }
+
+        /* 彈跳視窗 (Modal) */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            justify-content: center;
+            align-items: flex-end; /* 從下方滑出 */
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            animation: fadeIn 0.2s;
+        }
+
+        .modal-content {
+            background: #fff;
+            width: 100%;
+            max-width: 600px;
+            border-top-left-radius: 25px;
+            border-top-right-radius: 25px;
+            padding: 25px;
+            animation: slideUp 0.3s;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        /* 表單樣式 */
+        .form-group { margin-bottom: 15px; }
+        .form-label { display: block; font-weight: bold; margin-bottom: 5px; color: var(--text); }
+        
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #eee;
+            border-radius: 12px;
+            font-size: 16px;
+            outline: none;
+        }
+        .input-field:focus { border-color: var(--main-pink); }
+
+        .row { display: flex; gap: 10px; }
+        .col { flex: 1; }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: var(--main-pink);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            box-shadow: 0 4px 0 var(--deep-pink);
+        }
+        .btn-primary:active { transform: translateY(4px); box-shadow: none; }
+
+        .btn-secondary {
+            padding: 10px;
+            background: var(--mint);
+            color: #555;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            text-align: center;
+            flex: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 24px;
+            color: #aaa;
+            background: none;
+            border: none;
+        }
+        
+        #empty-state {
+            text-align: center;
+            margin-top: 50px;
+            color: #aaa;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- 頂部 -->
+<header>
+    <div class="mascot-avatar" id="mascotFace">👧</div>
+    <div class="bubble" id="mascotText">
+        主人，今天冰箱有什麼好吃的？
+    </div>
+</header>
+
+<!-- 篩選區 -->
+<div class="filter-bar">
+    <div class="filter-pill active" onclick="setFilter('all', this)">全部</div>
+    <div class="filter-pill" onclick="setFilter('fridge', this)">❄️ 冷藏</div>
+    <div class="filter-pill" onclick="setFilter('freezer', this)">🧊 冷凍</div>
+    <div class="filter-pill" onclick="setFilter('expiring', this)">⚠️ 快過期</div>
+</div>
+
+<!-- 列表區 -->
+<div class="food-list" id="foodList">
+    <!-- 內容由 JS 產生 -->
+    <div id="empty-state">
+        <div style="font-size: 50px; margin-bottom:10px;">🛒</div>
+        冰箱空空如也～<br>點擊右下角「+」補充糧食吧！
+    </div>
+</div>
+
+<!-- 懸浮按鈕 -->
+<div class="fab" onclick="openModal()">+</div>
+
+<!-- 新增表單視窗 -->
+<div class="modal-overlay" id="modal">
+    <div class="modal-content">
+        <button class="close-btn" onclick="closeModal()">×</button>
+        <h2 style="margin-top:0; text-align:center; color:var(--main-pink);">🍎 放入冰箱</h2>
+        
+        <!-- 功能按鈕 -->
+        <div class="row" style="margin-bottom: 15px;">
+            <button class="btn-secondary" onclick="document.getElementById('cameraInput').click()">📸 拍照</button>
+            <button class="btn-secondary" onclick="simulateScan()">📟 掃條碼</button>
+        </div>
+        
+        <!-- 隱藏的檔案輸入 -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handlePhoto(this)">
+        <div id="previewArea" style="display:none; margin-bottom:15px; text-align:center;">
+            <img id="previewImg" src="" style="height:100px; border-radius:10px;">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">食物名稱</label>
+            <input type="text" class="input-field" id="foodName" placeholder="例如：珍珠奶茶">
+        </div>
+
+        <div class="row form-group">
+            <div class="col">
+                <label class="form-label">分類</label>
+                <select class="input-field" id="category" onchange="autoSetDate()">
+                    <option value="veg">🥬 葉菜</option>
+                    <option value="meat">🥩 肉類</option>
+                    <option value="seafood">🐟 海鮮</option>
+                    <option value="dairy">🥛 蛋/奶</option>
+                    <option value="drink">🧃 飲料</option>
+                    <option value="sauce">🥫 醬料</option>
+                    <option value="cooked">🍱 熟食</option>
+                    <option value="other" selected>🥘 其他</option>
+                </select>
+            </div>
+            <div class="col">
+                <label class="form-label">位置</label>
+                <select class="input-field" id="storageType" onchange="autoSetDate()">
+                    <option value="fridge">❄️ 冷藏</option>
+                    <option value="freezer">🧊 冷凍</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">有效期限</label>
+            <input type="date" class="input-field" id="expiryDate">
+        </div>
+
+        <button class="btn-primary" onclick="addFood()">確認放入 ✨</button>
+    </div>
+</div>
+
+<script>
+    // ---------------- 資料與初始化 ----------------
+    let foods = JSON.parse(localStorage.getItem('mobileFridgeFoods')) || [];
+    const today = new Date().toISOString().split('T')[0];
+    
+    let currentImage = null;
+    let currentFilter = 'all';
+
+    // DOM 元素
+    const foodListEl = document.getElementById('foodList');
+    const mascotFace = document.getElementById('mascotFace');
+    const mascotText = document.getElementById('mascotText');
+    const modal = document.getElementById('modal');
+    
+    // 輸入欄位
+    const inputs = {
+        name: document.getElementById('foodName'),
+        category: document.getElementById('category'),
+        storage: document.getElementById('storageType'),
+        expiry: document.getElementById('expiryDate'),
+        preview: document.getElementById('previewArea'),
+        previewImg: document.getElementById('previewImg')
+    };
+
+    window.onload = function() {
+        inputs.expiry.value = today;
+        renderList();
+        checkAlerts();
+    };
+
+    // ---------------- 核心邏輯 ----------------
+
+    // 1. 自動計算日期
+    function autoSetDate() {
+        const cat = inputs.category.value;
+        const type = inputs.storage.value;
+        let days = 7;
+
+        // 簡易規則表
+        const rules = {
+            'veg': { 'fridge': 5, 'freezer': 30 },
+            'meat': { 'fridge': 3, 'freezer': 90 },
+            'seafood': { 'fridge': 2, 'freezer': 60 },
+            'dairy': { 'fridge': 10, 'freezer': 30 },
+            'sauce': { 'fridge': 180, 'freezer': 365 },
+            'drink': { 'fridge': 7, 'freezer': 30 },
+            'cooked': { 'fridge': 3, 'freezer': 14 }
+        };
+
+        if(rules[cat] && rules[cat][type]) {
+            days = rules[cat][type];
+        }
+
+        const d = new Date();
+        d.setDate(d.getDate() + days);
+        inputs.expiry.value = d.toISOString().split('T')[0];
+    }
+
+    // 2. 處理拍照
+    function handlePhoto(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                currentImage = e.target.result;
+                inputs.preview.style.display = 'block';
+                inputs.previewImg.src = currentImage;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // 3. 模擬掃描
+    function simulateScan() {
+        // 模擬延遲
+        mascotText.innerText = "正在掃描條碼...嗶！";
+        setTimeout(() => {
+            const randomFoods = ["有機牛奶", "韓式泡菜", "雞胸肉", "蘋果汁"];
+            const name = randomFoods[Math.floor(Math.random() * randomFoods.length)];
+            inputs.name.value = name;
+            alert(`掃描成功：${name}`);
+        }, 500);
+    }
+
+    // 4. 新增食物
+    function addFood() {
+        const name = inputs.name.value;
+        if(!name) {
+            alert("請輸入食物名稱喔！");
+            return;
+        }
+
+        const newFood = {
+            id: Date.now(),
+            name: name,
+            category: inputs.category.value,
+            storage: inputs.storage.value,
+            expiry: inputs.expiry.value,
+            img: currentImage
+        };
+
+        foods.push(newFood);
+        saveData();
+        closeModal();
+        renderList();
+        
+        // 重置表單
+        inputs.name.value = '';
+        currentImage = null;
+        inputs.preview.style.display = 'none';
+        
+        changeMascot('happy', `太棒了！已將 ${name} 放入冰箱！`);
+    }
+
+    // 5. 刪除食物
+    function removeFood(id) {
+        if(confirm("確定吃光光了嗎？🌍")) {
+            foods = foods.filter(f => f.id !== id);
+            saveData();
+            renderList();
+            changeMascot('happy', "謝謝你珍惜食物！愛你喔～❤️");
+        }
+    }
+
+    // 6. 儲存
+    function saveData() {
+        localStorage.setItem('mobileFridgeFoods', JSON.stringify(foods));
+    }
+
+    // 7. 畫面渲染
+    function setFilter(type, el) {
+        currentFilter = type;
+        // UI 更新
+        document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+        el.classList.add('active');
+        renderList();
+    }
+
+    function renderList() {
+        foodListEl.innerHTML = '';
+        
+        let filtered = foods.filter(f => {
+            if(currentFilter === 'all') return true;
+            if(currentFilter === 'expiring') return getDaysLeft(f.expiry) <= 2 && getDaysLeft(f.expiry) >= 0;
+            return f.storage === currentFilter;
+        });
+
+        // 排序: 日期近的在上面
+        filtered.sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+
+        if(filtered.length === 0) {
+            foodListEl.innerHTML = `
+                <div id="empty-state">
+                    <div style="font-size: 40px; margin-bottom:10px; opacity:0.5;">🌵</div>
+                    沒有符合條件的食物喔
+                </div>`;
+            return;
+        }
+
+        filtered.forEach(food => {
+            const days = getDaysLeft(food.expiry);
+            
+            // 狀態樣式
+            let statusClass = 'bg-ok';
+            let daysText = `${days}天`;
+            let cardClass = '';
+            let ecoHtml = '';
+
+            if (days < 0) {
+                daysText = `過期 ${Math.abs(days)} 天`;
+                statusClass = 'danger';
+                cardClass = 'expired';
+                ecoHtml = getEcoHtml(food.category);
+            } else if (days <= 2) {
+                daysText = `剩 ${days} 天`;
+                statusClass = 'warn';
+                cardClass = 'expiring';
+            }
+
+            // 圖片
+            const imgContent = food.img 
+                ? `<img src="${food.img}">` 
+                : getEmoji(food.category);
+
+            const html = `
+                <div class="food-card ${cardClass}">
+                    <div class="food-img">${imgContent}</div>
+                    <div class="food-info">
+                        <div class="food-header">
+                            <div class="food-name">${food.name}</div>
+                            <div class="days-tag ${statusClass}">${daysText}</div>
+                        </div>
+                        <div class="meta-row">
+                            ${food.storage==='fridge'?'❄️':'🧊'} | 期限: ${food.expiry.slice(5).replace('-','/')}
+                        </div>
+                        ${ecoHtml}
+                        <button class="btn-eat" onclick="removeFood(${food.id})">🍽️ 吃光光</button>
+                    </div>
+                </div>
+            `;
+            foodListEl.innerHTML += html;
+        });
+    }
+
+    // 輔助功能
+    function getDaysLeft(dateStr) {
+        const diff = new Date(dateStr) - new Date(today);
+        return Math.ceil(diff / (1000 * 60 * 60 * 24));
+    }
+
+    function getEmoji(cat) {
+        const map = { 'veg':'🥬','meat':'🥩','seafood':'🐟','dairy':'🥛','drink':'🧃','sauce':'🥫','cooked':'🍱','other':'🥘' };
+        return map[cat] || '🍴';
+    }
+
+    function getEcoHtml(cat) {
+        let tip = "可以當堆肥喔！";
+        if(cat === 'veg') tip = "枯葉埋土裡變肥料 🌱";
+        if(cat === 'dairy') tip = "牛奶可擦拭皮製品 👞";
+        if(cat === 'drink') tip = "咖啡渣除臭一流！";
+        if(cat === 'meat') tip = "請妥善包裝丟廚餘 🗑️";
+        return `<div class="eco-tip">💡 ${tip}</div>`;
+    }
+
+    function checkAlerts() {
+        const count = foods.filter(f => {
+            const d = getDaysLeft(f.expiry);
+            return d >= 0 && d <= 2;
+        }).length;
+
+        if(count > 0) {
+            changeMascot('panic', `主人！！有 ${count} 個食物快壞了！<br>快點救救它們！😱`);
+        }
+    }
+
+    function changeMascot(mood, text) {
+        mascotText.innerHTML = text;
+        const faces = { 'happy':'👧', 'panic':'😱', 'thinking':'🤔' };
+        mascotFace.innerText = faces[mood] || '👧';
+    }
+
+    // Modal 控制
+    function openModal() { 
+        modal.classList.add('show'); 
+        changeMascot('thinking', '嗯...這次買了什麼好吃的呢？');
+    }
+    function closeModal() { 
+        modal.classList.remove('show'); 
+        checkAlerts(); // 關閉時恢復原本的提醒
+    }
+    
+    // 點擊背景關閉
+    modal.addEventListener('click', function(e){
+        if(e.target === modal) closeModal();
+    });
+
+</script>
+
+</body>
+</html>
